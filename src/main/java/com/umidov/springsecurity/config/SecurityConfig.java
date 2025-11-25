@@ -9,8 +9,10 @@ import org.springframework.security.config.annotation.web.configurers.LogoutConf
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+
+import javax.sql.DataSource;
 
 @EnableWebSecurity
 @Configuration
@@ -21,7 +23,7 @@ public class SecurityConfig {
         httpSecurity
                 .authorizeHttpRequests(
                         request ->
-                                request.requestMatchers("/", "/home").permitAll()
+                                 request.requestMatchers("/", "/home").permitAll()
                                         .requestMatchers("/news").authenticated()
                                         .requestMatchers("/admin_panel").hasRole("ADMIN")
                                         .anyRequest().authenticated())
@@ -33,7 +35,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
+    public UserDetailsService userDetailsService(DataSource dataSource) {
         UserDetails admin = User.withDefaultPasswordEncoder()
                 .username("admin")
                 .password("123").roles("ADMIN")
@@ -43,6 +45,10 @@ public class SecurityConfig {
                 .password("123")
                 .build();
 
-        return new InMemoryUserDetailsManager(admin,user);
+        JdbcUserDetailsManager manager = new JdbcUserDetailsManager(dataSource);
+        manager.createUser(admin);
+        manager.createUser(user);
+
+        return (manager);
     }
 }
